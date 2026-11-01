@@ -1,0 +1,32 @@
+# docker compose -f example/compose.yaml up --build
+# then open http://localhost:8000 in two windows.
+#
+# Put your app's credentials in example/.env.local first (see README).
+x-app: &app
+  build:
+    context: ..
+    dockerfile: example/Dockerfile
+  env_file:
+    - path: .env.local
+      required: false
+  environment:
+    APP_SECRET: ${APP_SECRET:-change-me-in-production}
+  volumes:
+    - data:/app/var/data
+
+services:
+  web:
+    <<: *app
+    ports:
+      - "8000:80"
+
+  # Sends Turbo Streams to Hibira from Messenger's async transport.
+  worker:
+    <<: *app
+    command: ["php", "bin/console", "messenger:consume", "async", "--time-limit=3600", "-vv"]
+    restart: unless-stopped
+    depends_on:
+      - web
+
+volumes:
+  data:

@@ -1,0 +1,3 @@
+hibira:
+    resource: '@HibiraSymfonyBundle/config/routes.php'
+    prefix: /hibira

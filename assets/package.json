@@ -1,0 +1,38 @@
+{
+    "name": "@hibira-io/symfony-bundle",
+    "description": "Turbo Streams over Hibira for Symfony UX",
+    "license": "MIT",
+    "version": "0.1.0",
+    "keywords": [
+        "symfony-ux",
+        "turbo",
+        "turbo-stream",
+        "hibira",
+        "pusher"
+    ],
+    "homepage": "https://github.com/hibira-io/symfony",
+    "type": "module",
+    "main": "dist/turbo_stream_controller.js",
+    "files": [
+        "dist"
+    ],
+    "symfony": {
+        "controllers": {
+            "turbo-stream": {
+                "main": "dist/turbo_stream_controller.js",
+                "fetch": "eager",
+                "enabled": true
+            }
+        },
+        "importmap": {
+            "@hotwired/stimulus": "^3.0.0",
+            "@hotwired/turbo": "^7.1.0 || ^8.0",
+            "pusher-js": "^8.4.0"
+        }
+    },
+    "peerDependencies": {
+        "@hotwired/stimulus": "^3.0.0",
+        "@hotwired/turbo": "^7.1.0 || ^8.0",
+        "pusher-js": "^8.4.0"
+    }
+}

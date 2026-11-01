@@ -1,0 +1,8 @@
+framework:
+    messenger:
+        transports:
+            async: '%env(MESSENGER_TRANSPORT_DSN)%'
+        routing:
+            # Sends Turbo Streams from the worker, so a slow network never
+            # slows down the request that saved the entity.
+            Hibira\SymfonyBundle\Message\PublishEvent: async

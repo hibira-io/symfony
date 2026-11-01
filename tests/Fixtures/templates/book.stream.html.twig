@@ -1,0 +1,3 @@
+{% block create %}<turbo-stream action="append" target="books"><template><li id="book_{{ id }}">{{ entity.title }}</li></template></turbo-stream>{% endblock %}
+{% block update %}<turbo-stream action="replace" target="book_{{ id }}"><template><li id="book_{{ id }}">{{ entity.title }}</li></template></turbo-stream>{% endblock %}
+{% block remove %}<turbo-stream action="remove" target="book_{{ id }}"></turbo-stream>{% endblock %}
