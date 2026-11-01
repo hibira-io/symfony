@@ -100,10 +100,12 @@ final class BundleTest extends TestCase
         $html = $container->get('twig')->render('listen.html.twig', ['book' => new Book(7, 'Dune')]);
 
         $prefix = 'data-hibira-io--symfony-bundle--turbo-stream';
+        // Older StimulusBundle versions escape "/" as &#x2F;.
+        $decoded = html_entity_decode($html);
         $this->assertStringContainsString('data-controller="hibira-io--symfony-bundle--turbo-stream"', $html);
-        $this->assertStringContainsString($prefix.'-key-value="app-key"', $html);
-        $this->assertStringContainsString($prefix.'-host-value="hibira.test"', $html);
-        $this->assertStringContainsString($prefix.'-auth-endpoint-value="/hibira/auth"', $html);
+        $this->assertStringContainsString($prefix.'-key-value="app-key"', $decoded);
+        $this->assertStringContainsString($prefix.'-host-value="hibira.test"', $decoded);
+        $this->assertStringContainsString($prefix.'-auth-endpoint-value="/hibira/auth"', $decoded);
 
         foreach ([
             'by-topic' => 'chat',
