@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hibira × Symfony UX Turbo{% endblock %}
+
+{% block body %}
+<main>
+    <h1>Live board</h1>
+    <p class="hint">Open this page in two windows. Messages appear in both without a Mercure hub: Doctrine
+        <code>#[Broadcast]</code> → Messenger → Hibira → Turbo Streams.</p>
+
+    {# Subscribes to every Message: the class topic. #}
+    <ul id="messages" {{ turbo_stream_listen('App\\Entity\\Message') }}>
+        {% for message in messages %}
+            {{ include('message/_message.html.twig') }}
+        {% endfor %}
+    </ul>
+
+    <form method="post" action="{{ path('message_create') }}" class="compose">
+        <input name="author" placeholder="Your name" maxlength="40" value="{{ app.request.query.get('author') }}">
+        <input name="body" placeholder="Say something" maxlength="280" required autofocus>
+        <button type="submit">Send</button>
+    </form>
+</main>
+{% endblock %}

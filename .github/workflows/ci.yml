@@ -1,0 +1,68 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - symfony: "6.4.*"
+            php: "8.1"
+          - symfony: "6.4.*"
+            php: "8.1"
+            lowest: "--prefer-lowest"
+          - symfony: "7.4.*"
+            php: "8.3"
+          - symfony: "8.1.*"
+            php: "8.4"
+          - symfony: "8.1.*"
+            php: "8.5"
+    name: Symfony ${{ matrix.symfony }} / PHP ${{ matrix.php }} ${{ matrix.lowest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Install
+        run: |
+          sed -i 's/"\^6.4|\^7.0|\^8.0"/"${{ matrix.symfony }}"/g' composer.json
+          composer update ${{ matrix.lowest }} --prefer-dist --no-interaction --no-progress --with-all-dependencies
+          composer show | grep -E 'symfony/(framework-bundle|ux-turbo) |pusher/'
+      - run: vendor/bin/phpunit
+
+  assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: for f in assets/dist/*.js; do node --check "$f"; done
+
+  # Builds the live board on FrankenPHP with this checkout of the bundle and
+  # checks that the page renders the Hibira controller.
+  example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f example/Dockerfile -t hibira-symfony-example .
+      - name: Smoke test
+        run: |
+          docker run -d --name web -p 8000:80 \
+            -e HIBIRA_APP_ID=1 -e HIBIRA_APP_KEY=ci-key -e HIBIRA_APP_SECRET=ci-secret -e APP_SECRET=ci \
+            hibira-symfony-example
+          for i in $(seq 1 30); do curl -fs http://localhost:8000/ -o page.html && break; sleep 1; done
+          grep -q 'data-controller="hibira-io--symfony-bundle--turbo-stream"' page.html
+          grep -q 'data-hibira-io--symfony-bundle--turbo-stream-key-value="ci-key"' page.html
+          docker exec web php bin/console hibira:check --offline
+      - if: failure()
+        run: docker logs web

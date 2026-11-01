@@ -1,0 +1,12 @@
+/vendor/
+/composer.lock
+/.phpunit.cache/
+/.phpunit.result.cache
+/example/vendor/
+/example/var/
+/example/.env.local
+/example/composer.lock
+/example/public/assets/
+/node_modules/
+/example/node_modules/
+/config/reference.php

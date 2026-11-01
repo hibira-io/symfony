@@ -1,0 +1,16 @@
+{# Rendered by UX Turbo for every change to a Message and sent over Hibira. #}
+{% block create %}
+<turbo-stream action="append" target="messages">
+    <template>{{ include('message/_message.html.twig', { message: entity }) }}</template>
+</turbo-stream>
+{% endblock %}
+
+{% block update %}
+<turbo-stream action="replace" target="message_{{ id }}">
+    <template>{{ include('message/_message.html.twig', { message: entity }) }}</template>
+</turbo-stream>
+{% endblock %}
+
+{% block remove %}
+<turbo-stream action="remove" target="message_{{ id }}"></turbo-stream>
+{% endblock %}

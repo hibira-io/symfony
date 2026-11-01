@@ -1,0 +1,8 @@
+<li id="message_{{ message.id }}" class="message">
+    <strong>{{ message.author }}</strong>
+    <span class="body">{{ message.body }}</span>
+    <time>{{ message.createdAt|date('H:i:s') }}</time>
+    <form method="post" action="{{ path('message_delete', { id: message.id }) }}">
+        <button type="submit" title="Delete" aria-label="Delete">×</button>
+    </form>
+</li>

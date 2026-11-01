@@ -1,0 +1,5 @@
+# Credentials come from HIBIRA_APP_ID, HIBIRA_APP_KEY and HIBIRA_APP_SECRET.
+hibira:
+    host: '%env(HIBIRA_HOST)%'
+    port: '%env(int:HIBIRA_PORT)%'
+    scheme: '%env(HIBIRA_SCHEME)%'

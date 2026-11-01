@@ -1,0 +1,84 @@
+{
+    "name": "hibira-io/symfony-bundle",
+    "type": "symfony-bundle",
+    "description": "Hibira realtime for Symfony: UX Turbo Streams and Messenger without running a Mercure hub, plus channel auth, webhooks and push",
+    "keywords": [
+        "symfony",
+        "symfony-bundle",
+        "symfony-ux",
+        "turbo",
+        "hotwire",
+        "mercure",
+        "messenger",
+        "websockets",
+        "realtime",
+        "pusher",
+        "push notifications",
+        "hibira"
+    ],
+    "homepage": "https://hibira.io",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Hibira",
+            "homepage": "https://hibira.io"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/hibira-io/symfony/issues",
+        "docs": "https://github.com/hibira-io/symfony#readme",
+        "email": "support@hibira.io"
+    },
+    "require": {
+        "php": ">=8.1",
+        "pusher/pusher-php-server": "^7.2",
+        "symfony/config": "^6.4|^7.0|^8.0",
+        "symfony/console": "^6.4|^7.0|^8.0",
+        "symfony/dependency-injection": "^6.4|^7.0|^8.0",
+        "symfony/event-dispatcher": "^6.4|^7.0|^8.0",
+        "symfony/framework-bundle": "^6.4|^7.0|^8.0",
+        "symfony/http-foundation": "^6.4|^7.0|^8.0",
+        "symfony/http-kernel": "^6.4|^7.0|^8.0",
+        "symfony/routing": "^6.4|^7.0|^8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5|^11.0|^12.0",
+        "pusher/pusher-push-notifications": "^2.0",
+        "symfony/expression-language": "^6.4|^7.0|^8.0",
+        "symfony/messenger": "^6.4|^7.0|^8.0",
+        "symfony/property-access": "^6.4|^7.0|^8.0",
+        "symfony/security-bundle": "^6.4|^7.0|^8.0",
+        "symfony/twig-bundle": "^6.4|^7.0|^8.0",
+        "symfony/ux-turbo": "^2.20|^3.0",
+        "symfony/yaml": "^6.4|^7.0|^8.0"
+    },
+    "suggest": {
+        "symfony/ux-turbo": "Broadcast Turbo Streams (#[Broadcast] entities, turbo_stream_listen) over Hibira instead of a Mercure hub",
+        "symfony/messenger": "Send events from a worker: route Hibira\\SymfonyBundle\\Message\\PublishEvent to an async transport",
+        "symfony/security-bundle": "Sign users in for private and presence channels and push user tokens",
+        "pusher/pusher-push-notifications": "iOS, Android and browser push notifications with Hibira Push (Beams-compatible)"
+    },
+    "autoload": {
+        "psr-4": {
+            "Hibira\\SymfonyBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Hibira\\SymfonyBundle\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.1.x-dev"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

@@ -1,0 +1,4 @@
+<div id="by-topic" {{ turbo_stream_listen('chat') }}></div>
+<div id="by-entity" {{ turbo_stream_listen(book, 'hibira') }}></div>
+<div id="by-class" {{ turbo_stream_listen('Hibira\\SymfonyBundle\\Tests\\Fixtures\\Book') }}></div>
+{{ hibira_meta_tags() }}

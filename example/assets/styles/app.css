@@ -1,0 +1,18 @@
+:root { color-scheme: light dark; --accent: #6c4cf1; --muted: #8a8a99; }
+*, *::before, *::after { box-sizing: border-box; }
+body { font: 16px/1.5 system-ui, sans-serif; margin: 0; padding: 24px 16px; }
+main { max-width: 640px; margin: 0 auto; }
+h1 { margin: 0 0 4px; }
+.hint { color: var(--muted); margin: 0 0 16px; }
+#messages { list-style: none; padding: 0; margin: 0 0 16px; border: 1px solid #8884; border-radius: 12px; min-height: 120px; }
+#messages[data-hibira-connected] { border-color: var(--accent); }
+.message { display: flex; gap: 8px; align-items: baseline; padding: 8px 12px; border-bottom: 1px solid #8882; }
+.message .body { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.message time { color: var(--muted); font-size: 13px; }
+.message form { margin: 0; }
+.message button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 18px; }
+.compose { display: flex; flex-wrap: wrap; gap: 8px; }
+.compose input { min-width: 0; padding: 8px 10px; border: 1px solid #8886; border-radius: 8px; font: inherit; }
+.compose input[name=author] { width: 120px; }
+.compose input[name=body] { flex: 1 1 200px; }
+.compose button { padding: 8px 16px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; font: inherit; cursor: pointer; }
