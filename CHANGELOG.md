@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0
+
+- Waiting rooms: `#[WaitingRoom('presale')]` on controllers and
+  `hibira.waiting_room.paths` send visitors without a pass to the Hibira
+  queue and let them in with a signed pass kept in an HttpOnly cookie (the
+  `hibira_pass` request attribute). `WaitingRooms::verifyPass()` checks a
+  pass anywhere.
+
 ## 0.1.0
 
 - First release.
