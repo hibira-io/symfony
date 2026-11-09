@@ -120,6 +120,7 @@ final class TestKernel extends Kernel
             ->addTag('kernel.event_listener', ['event' => \Hibira\SymfonyBundle\Event\WebhookReceivedEvent::class, 'method' => 'onWebhook']);
 
         $container->register('logger', \Psr\Log\NullLogger::class);
+        $container->register(DropController::class)->setPublic(true)->addTag('controller.service_arguments');
         $container->register('test.http_client', Client::class)->setFactory([self::class, 'httpClient']);
         $container->addCompilerPass(new class implements CompilerPassInterface {
             public function process(ContainerBuilder $container): void
@@ -137,5 +138,8 @@ final class TestKernel extends Kernel
     protected function configureRoutes(RoutingConfigurator $routes): void
     {
         $routes->import('@HibiraSymfonyBundle/config/routes.php')->prefix('/hibira');
+        $routes->add('drop', '/drop/{id}')->controller([DropController::class, 'show'])->methods(['GET', 'POST']);
+        $routes->add('vip', '/vip/{id}')->controller([DropController::class, 'open'])->methods(['GET', 'POST']);
+        $routes->add('open', '/open')->controller([DropController::class, 'open']);
     }
 }

@@ -12,6 +12,8 @@ use Hibira\SymfonyBundle\Turbo\HibiraBroadcaster;
 use Hibira\SymfonyBundle\Turbo\StreamListenRenderer;
 use Hibira\SymfonyBundle\Turbo\StreamSourceRenderer;
 use Hibira\SymfonyBundle\Twig\HibiraExtension;
+use Hibira\SymfonyBundle\WaitingRoom\WaitingRoomListener;
+use Hibira\SymfonyBundle\WaitingRoom\WaitingRooms;
 use Pusher\Pusher;
 use Symfony\Component\AssetMapper\AssetMapperInterface;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
@@ -58,6 +60,20 @@ final class HibiraSymfonyBundle extends AbstractBundle
                     ->children()
                         ->enumNode('enabled')->values(['auto', true, false])->defaultValue('auto')->info('auto: publish() dispatches PublishEvent when symfony/messenger is installed')->end()
                         ->scalarNode('bus')->defaultValue('messenger.default_bus')->end()
+                    ->end()
+                ->end()
+                ->arrayNode('waiting_room')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->arrayNode('paths')
+                            ->info('Path prefix => room, for example {"/drop": "presale"}. Or use #[WaitingRoom] on controllers')
+                            ->useAttributeAsKey('path')
+                            ->normalizeKeys(false)
+                            ->scalarPrototype()->end()
+                        ->end()
+                        ->scalarNode('host')->defaultNull()->info('Hosted waiting page origin. Default: scheme://host of the Hibira server')->end()
+                        ->scalarNode('lang')->defaultNull()->info('Waiting page language (en, ja, ko, zh-TW, ...). Default: the browser\'s')->end()
+                        ->scalarNode('previous_secret')->defaultNull()->info('Also accepted during a secret rotation')->end()
                     ->end()
                 ->end()
                 ->arrayNode('push')
@@ -125,6 +141,23 @@ final class HibiraSymfonyBundle extends AbstractBundle
             ->args([service('hibira'), service('security.token_storage')->nullOnInvalid()])
             ->tag('controller.service_arguments')
             ->public();
+
+        $services->set('hibira.waiting_rooms', WaitingRooms::class)
+            ->args([
+                $config['app_id'],
+                $config['key'],
+                array_values(array_filter([$config['secret'], $config['waiting_room']['previous_secret']])),
+                $config['waiting_room']['host'] ?? $config['scheme'].'://'.$config['host'].(\in_array((string) $config['port'], ['443', '80'], true) ? '' : ':'.$config['port']),
+                $config['waiting_room']['lang'],
+                $config['waiting_room']['paths'],
+            ]);
+        $services->alias(WaitingRooms::class, 'hibira.waiting_rooms');
+        $listener = $services->set('hibira.waiting_room_listener', WaitingRoomListener::class)
+            ->args([service('hibira.waiting_rooms')])
+            ->tag('kernel.event_listener', ['event' => 'kernel.controller', 'method' => 'onController', 'priority' => 8]);
+        if ($config['waiting_room']['paths']) {
+            $listener->tag('kernel.event_listener', ['event' => 'kernel.request', 'method' => 'onRequest', 'priority' => 7]);
+        }
 
         $services->set('hibira.command.check', CheckCommand::class)
             ->args([service('hibira'), $turbo, $messenger])

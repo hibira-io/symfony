@@ -263,6 +263,45 @@ $hibira->push()->publishToUsers(['ada'], [
 `GET /hibira/push/token?user_id=...` returns a user token for the signed-in
 user, for `setUserId()` in the web, Android and iOS SDKs.
 
+## Waiting room
+
+Put a [Hibira waiting room](https://github.com/hibira-io/waiting-room) in front
+of a ticket drop or launch page with the `#[WaitingRoom]` attribute (on a
+controller method or class):
+
+```php
+use Hibira\SymfonyBundle\WaitingRoom\WaitingRoom;
+use Hibira\SymfonyBundle\WaitingRoom\WaitingRoomPass;
+
+#[Route('/drop/{id}')]
+#[WaitingRoom('presale')]
+public function drop(Request $request): Response
+{
+    $pass = $request->attributes->get('hibira_pass'); // WaitingRoomPass: number, ticketId, expiresAt
+    // ...
+}
+```
+
+Or protect path prefixes:
+
+```yaml
+# config/packages/hibira.yaml
+hibira:
+    waiting_room:
+        paths: { '/drop': presale }
+        # lang: ja
+        # previous_secret: '%env(HIBIRA_PREVIOUS_SECRET)%'
+```
+
+Visitors without a pass are redirected to the hosted queue page (non-GET
+requests get a `403`). When it's their turn they come back with a signed pass,
+which is checked and kept in an HttpOnly cookie. Create the room (rate, start
+time, `return_urls`) with the
+[waiting rooms API](https://github.com/hibira-io/pusher-server/blob/master/docs/waiting-rooms.md).
+A pass is valid for 30 minutes by default and works in any browser; if each
+queue number may check out once, record `$pass->ticketId` and refuse a repeat.
+`WaitingRooms::verifyPass($token, $secret, 'presale')` checks a pass anywhere.
+
 ## Coming from Mercure
 
 | Mercure | Hibira |
@@ -313,3 +352,4 @@ vendor/bin/phpunit
   `php bin/console hibira:check`。記得在應用頁面的 Allowed origins 加入網站網域。
 - 支援 Symfony 6.4、7.x、8.x（PHP 8.1+），UX Turbo 2 與 3。
   `example/` 是跑在 FrankenPHP 上的即時留言板範例。
+- 等候室（waiting room）：在 controller 加 `#[WaitingRoom('presale')]`，或在 `hibira.waiting_room.paths` 設定路徑，沒有 pass 的訪客會被導到 Hibira 託管的排隊頁，輪到時帶著簽名 pass 回來並存成 HttpOnly cookie。
