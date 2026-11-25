@@ -2,10 +2,12 @@
 
 namespace Hibira\SymfonyBundle;
 
+use Hibira\SymfonyBundle\Exception\ApprovalException;
 use Hibira\SymfonyBundle\Exception\MissingCredentialsException;
 use Hibira\SymfonyBundle\Exception\PayloadTooLargeException;
 use Hibira\SymfonyBundle\Message\PublishEvent;
 use Hibira\SymfonyBundle\Turbo\TurboStreams;
+use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use Psr\Log\LoggerInterface;
 use Pusher\ApiErrorException;
@@ -132,6 +134,107 @@ class Hibira
     public function authorizePresenceChannel(string $channel, string $socketId, string $userId, ?array $userInfo = null): string
     {
         return $this->pusher()->authorizePresenceChannel($channel, $socketId, $userId, $userInfo);
+    }
+
+    public const APPROVAL_MAX_WAIT = 25;
+
+    private const APPROVAL_FIELDS = ['details', 'options', 'expires_in_minutes', 'channel', 'push_interests', 'push_users', 'agent'];
+
+    /**
+     * Asks a person for a decision (Hibira Approvals). Share the returned
+     * "url" with whoever decides, then read the answer with approval() or
+     * waitForApproval(). In $fields, options are 2 to 4 choices (the first
+     * approves) and expires_in_minutes is 1 to 10080 (default 60).
+     *
+     * @param array{details?: string, options?: list<string>, expires_in_minutes?: int, channel?: string, push_interests?: list<string>, push_users?: list<string>, agent?: string} $fields
+     *
+     * @return array<string, mixed> the approval: approval_id, status, url, options, ...
+     */
+    public function requestApproval(string $title, array $fields = []): array
+    {
+        if (trim($title) === '') {
+            throw new \InvalidArgumentException('An approval needs a title.');
+        }
+        $unknown = array_diff(array_keys($fields), self::APPROVAL_FIELDS);
+        if ($unknown !== []) {
+            throw new \InvalidArgumentException('Unknown approval fields: '.implode(', ', $unknown));
+        }
+
+        return $this->approvalsRequest('POST', '/approvals', [], ['title' => $title] + array_filter($fields, fn ($v) => $v !== null));
+    }
+
+    /**
+     * An approval's status (pending, approved, rejected or expired). $wait
+     * (seconds, up to 25) holds the request until it is answered.
+     *
+     * @return array<string, mixed>
+     */
+    public function approval(string $approvalId, int $wait = 0): array
+    {
+        if ($approvalId === '') {
+            throw new \InvalidArgumentException('An approval ID is required.');
+        }
+        $wait = max(0, min(self::APPROVAL_MAX_WAIT, $wait));
+
+        return $this->approvalsRequest('GET', '/approvals/'.rawurlencode($approvalId), $wait > 0 ? ['wait' => (string) $wait] : [], null, $wait + 10);
+    }
+
+    /**
+     * Polls until the approval is no longer pending, or $timeout seconds
+     * pass, and returns it.
+     *
+     * @return array<string, mixed>
+     */
+    public function waitForApproval(string $approvalId, int $timeout = 3600): array
+    {
+        $deadline = microtime(true) + $timeout;
+        while (true) {
+            $left = (int) ceil($deadline - microtime(true));
+            $approval = $this->approval($approvalId, min(self::APPROVAL_MAX_WAIT, max(0, $left)));
+            if (($approval['status'] ?? null) !== 'pending' || $left <= self::APPROVAL_MAX_WAIT) {
+                return $approval;
+            }
+        }
+    }
+
+    /**
+     * @param array<string, string>     $query
+     * @param array<string, mixed>|null $body
+     *
+     * @return array<string, mixed>
+     */
+    private function approvalsRequest(string $method, string $resource, array $query, ?array $body, int $timeout = 15): array
+    {
+        $missing = $this->missingCredentials();
+        if ($missing !== []) {
+            throw MissingCredentialsException::realtime($missing);
+        }
+        $path = '/apps/'.$this->config['app_id'].$resource;
+        $json = $body === null ? null : json_encode($body, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($json !== null) {
+            $query['body_md5'] = md5($json);
+        }
+        $signed = Pusher::build_auth_query_params((string) $this->config['key'], (string) $this->config['secret'], $method, $path, $query);
+        $options = [
+            'query' => $signed,
+            'http_errors' => false,
+            'timeout' => $timeout,
+            'headers' => ['Content-Type' => 'application/json', 'User-Agent' => 'hibira-symfony'],
+        ];
+        if ($json !== null) {
+            $options['body'] = $json;
+        }
+        $url = $this->config['scheme'].'://'.$this->config['host'].':'.$this->config['port'].$path;
+        $response = ($this->httpClient ?? new Client())->request($method, $url, $options);
+        $text = (string) $response->getBody();
+        $data = json_decode($text, true);
+        $status = $response->getStatusCode();
+        if ($status >= 200 && $status < 300 && \is_array($data)) {
+            return $data;
+        }
+        $message = \is_array($data) && isset($data['error']) ? (string) $data['error'] : trim($text);
+
+        throw new ApprovalException($status, $message !== '' ? $message : 'HTTP '.$status, $text);
     }
 
     /**
