@@ -138,7 +138,7 @@ class Hibira
 
     public const APPROVAL_MAX_WAIT = 25;
 
-    private const APPROVAL_FIELDS = ['details', 'options', 'expires_in_minutes', 'channel', 'push_interests', 'push_users', 'agent'];
+    private const APPROVAL_FIELDS = ['details', 'options', 'expires_in_minutes', 'channel', 'push_interests', 'push_users', 'agent', 'approvers', 'quorum', 'callback_url'];
 
     /**
      * Asks a person for a decision (Hibira Approvals). Share the returned
@@ -146,7 +146,7 @@ class Hibira
      * waitForApproval(). In $fields, options are 2 to 4 choices (the first
      * approves) and expires_in_minutes is 1 to 10080 (default 60).
      *
-     * @param array{details?: string, options?: list<string>, expires_in_minutes?: int, channel?: string, push_interests?: list<string>, push_users?: list<string>, agent?: string} $fields
+     * @param array{details?: string, options?: list<string>, expires_in_minutes?: int, channel?: string, push_interests?: list<string>, push_users?: list<string>, agent?: string, approvers?: list<string>, quorum?: int, callback_url?: string} $fields
      *
      * @return array<string, mixed> the approval: approval_id, status, url, options, ...
      */
@@ -177,6 +177,22 @@ class Hibira
         $wait = max(0, min(self::APPROVAL_MAX_WAIT, $wait));
 
         return $this->approvalsRequest('GET', '/approvals/'.rawurlencode($approvalId), $wait > 0 ? ['wait' => (string) $wait] : [], null, $wait + 10);
+    }
+
+    /**
+     * Answers an approver's question on a pending request (the approval has
+     * "awaiting_reply" => true). $details, when given, replaces the request's
+     * details for the approvers.
+     *
+     * @return array<string, mixed>
+     */
+    public function replyToApproval(string $approvalId, string $message, ?string $details = null): array
+    {
+        if ($approvalId === '' || trim($message) === '') {
+            throw new \InvalidArgumentException('An approval ID and a message are required.');
+        }
+
+        return $this->approvalsRequest('POST', '/approvals/'.rawurlencode($approvalId).'/replies', [], ['message' => $message] + ($details === null ? [] : ['details' => $details]));
     }
 
     /**

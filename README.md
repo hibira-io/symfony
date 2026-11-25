@@ -346,7 +346,10 @@ if ($approval['status'] === 'approved') {
 
 `$hibira->approval($id, wait: 25)` reads one status, holding the request up
 to 25 seconds until it is answered. API errors throw `ApprovalException`
-(`getCode()` is the HTTP status).
+(`getCode()` is the HTTP status). When an approver asks a question instead
+of deciding (`$approval['awaiting_reply']`), answer with
+`$hibira->replyToApproval($id, '...')`. `approvers`, `quorum` and
+`callback_url` are passed through for Approvals workspaces.
 
 ## Coming from Mercure
 

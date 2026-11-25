@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Approvals: `Hibira::requestApproval()`, `approval()` and `waitForApproval()` ask a person for a decision and read the answer; errors throw `ApprovalException`.
+- Approvals: `Hibira::requestApproval()`, `approval()`, `waitForApproval()` and `replyToApproval()` ask a person for a decision and read the answer; errors throw `ApprovalException`.
 - Live Chat: `{{ hibira_live_chat() }}` puts the Hibira Live Chat widget on the page; with `hibira.live_chat.identity_secret` (`HIBIRA_LIVECHAT_IDENTITY_SECRET`) the signed-in user is a verified visitor (`data-user-hash`). The `LiveChat` service gives `identity()` and `userHash()` for SPAs.
 
 ## 0.2.0

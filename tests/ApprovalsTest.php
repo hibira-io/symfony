@@ -93,6 +93,18 @@ final class ApprovalsTest extends TestCase
         $this->assertSigned($request);
     }
 
+    public function testReplyToApprovalPostsTheReply(): void
+    {
+        $hibira = $this->hibira();
+        $this->responses->append(new Response(201, [], self::approval()));
+
+        $hibira->replyToApproval('apr_1', 'Staging only', 'DELETE ... LIMIT 12');
+        $request = $this->history[0]['request'];
+        $this->assertSame('/apps/1/approvals/apr_1/replies', $request->getUri()->getPath());
+        $this->assertSame(['message' => 'Staging only', 'details' => 'DELETE ... LIMIT 12'], json_decode((string) $request->getBody(), true));
+        $this->assertSigned($request);
+    }
+
     public function testWaitForApprovalPollsUntilAnswered(): void
     {
         $hibira = $this->hibira();
