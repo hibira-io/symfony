@@ -89,6 +89,9 @@ hibira:
     messenger:
         enabled: auto         # on when symfony/messenger is installed
         bus: messenger.default_bus
+    live_chat:
+        workspace: '%env(default::HIBIRA_LIVECHAT_WORKSPACE)%'
+        identity_secret: '%env(default::HIBIRA_LIVECHAT_IDENTITY_SECRET)%'
     push:
         instance_id: '%env(default::HIBIRA_PUSH_INSTANCE_ID)%'
         secret_key: '%env(default::HIBIRA_PUSH_SECRET_KEY)%'
@@ -243,6 +246,26 @@ public function onWebhook(WebhookReceivedEvent $event): void
 }
 ```
 
+## Live Chat
+
+Put the [Hibira Live Chat](https://chat.hibira.io) widget on your pages, and
+let signed-in users chat as themselves. In your base template, before `</body>`:
+
+```twig
+{{ hibira_live_chat() }}
+{# options: {{ hibira_live_chat({color: '#0a7', lang: 'ja', launcher: false, nonce: csp_nonce('script')}) }} #}
+```
+
+Set `HIBIRA_LIVECHAT_WORKSPACE` (or `hibira.live_chat.workspace`) to the
+workspace ID from Live Chat › Settings › Widget. With
+`HIBIRA_LIVECHAT_IDENTITY_SECRET` set too (Verified visitors, Starter plan and
+up), the signed-in user is sent with `data-user-hash`, an HMAC of their ID, so
+the inbox shows their name and email and nobody can pretend to be them. The ID
+is `getId()` (or `getUserIdentifier()`), the name `getFullName()` or
+`getName()`, the email `getEmail()`; change it with
+`LiveChat::describeUserUsing()`. In an SPA, the `LiveChat` service's
+`identity($user)` gives the fields for `HibiraLiveChat.identify()`.
+
 ## Push notifications
 
 ```sh
@@ -302,6 +325,32 @@ A pass is valid for 30 minutes by default and works in any browser; if each
 queue number may check out once, record `$pass->ticketId` and refuse a repeat.
 `WaitingRooms::verifyPass($token, $secret, 'presale')` checks a pass anywhere.
 
+## Approvals
+
+Ask a person for a decision from a controller, a Messenger handler or an
+agent ([Hibira Approvals](https://hibira.io/approvals)), then act on the answer:
+
+```php
+$approval = $hibira->requestApproval('Refund order #1042 for $89?', [
+    'details' => 'Customer says the parcel arrived damaged.',
+    'options' => ['Refund', 'Decline'],     // the first option approves
+    'channel' => 'private-ops',             // optional: an "approval" event on request and decision
+    'expires_in_minutes' => 120,
+]);
+// share $approval['url'] with whoever decides, then
+$approval = $hibira->waitForApproval($approval['approval_id'], timeout: 600);
+if ($approval['status'] === 'approved') {
+    $refunds->refund($order);
+}
+```
+
+`$hibira->approval($id, wait: 25)` reads one status, holding the request up
+to 25 seconds until it is answered. API errors throw `ApprovalException`
+(`getCode()` is the HTTP status). When an approver asks a question instead
+of deciding (`$approval['awaiting_reply']`), answer with
+`$hibira->replyToApproval($id, '...')`. `approvers`, `quorum` and
+`callback_url` are passed through for Approvals workspaces.
+
 ## Coming from Mercure
 
 | Mercure | Hibira |
@@ -347,9 +396,12 @@ vendor/bin/phpunit
 - **頻道授權、Webhook、推播**：`POST /hibira/auth`（以
   `ChannelAuthorizationEvent` 決定）、驗證簽章的 webhook 路由（派發
   `WebhookReceivedEvent`）、推播 user token。
+- **Live Chat**：在 base 模板加 `{{ hibira_live_chat() }}` 就會放上 Hibira Live Chat 聊天視窗；設定 identity secret 後，登入使用者以 HMAC 簽名的本人身分聊天。
 - 安裝：`composer require hibira-io/symfony-bundle`，在 `.env.local` 填入
   `HIBIRA_APP_ID` / `HIBIRA_APP_KEY` / `HIBIRA_APP_SECRET`，匯入路由後執行
   `php bin/console hibira:check`。記得在應用頁面的 Allowed origins 加入網站網域。
 - 支援 Symfony 6.4、7.x、8.x（PHP 8.1+），UX Turbo 2 與 3。
   `example/` 是跑在 FrankenPHP 上的即時留言板範例。
 - 等候室（waiting room）：在 controller 加 `#[WaitingRoom('presale')]`，或在 `hibira.waiting_room.paths` 設定路徑，沒有 pass 的訪客會被導到 Hibira 託管的排隊頁，輪到時帶著簽名 pass 回來並存成 HttpOnly cookie。
+
+- **Approvals**：`$hibira->requestApproval()` 發出需要人決定的請求，把回傳的 `url` 分享給決策者，再用 `waitForApproval()` 等待結果（approved、rejected 或 expired）。
