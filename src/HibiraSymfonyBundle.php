@@ -6,6 +6,7 @@ use Hibira\SymfonyBundle\Command\CheckCommand;
 use Hibira\SymfonyBundle\Controller\ChannelAuthController;
 use Hibira\SymfonyBundle\Controller\PushTokenController;
 use Hibira\SymfonyBundle\Controller\WebhookController;
+use Hibira\SymfonyBundle\LiveChat\LiveChat;
 use Hibira\SymfonyBundle\Message\PublishEvent;
 use Hibira\SymfonyBundle\MessageHandler\PublishEventHandler;
 use Hibira\SymfonyBundle\Turbo\HibiraBroadcaster;
@@ -76,6 +77,13 @@ final class HibiraSymfonyBundle extends AbstractBundle
                         ->scalarNode('previous_secret')->defaultNull()->info('Also accepted during a secret rotation')->end()
                     ->end()
                 ->end()
+                ->arrayNode('live_chat')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->scalarNode('workspace')->defaultValue('%env(default::HIBIRA_LIVECHAT_WORKSPACE)%')->info('Live Chat › Settings › Widget: the workspace ID for {{ hibira_live_chat() }}')->end()
+                        ->scalarNode('identity_secret')->defaultValue('%env(default::HIBIRA_LIVECHAT_IDENTITY_SECRET)%')->info('Verified visitors: signs the signed-in user so they chat as themselves')->end()
+                    ->end()
+                ->end()
                 ->arrayNode('push')
                     ->addDefaultsIfNotSet()
                     ->children()
@@ -142,6 +150,11 @@ final class HibiraSymfonyBundle extends AbstractBundle
             ->tag('controller.service_arguments')
             ->public();
 
+        $services->set('hibira.live_chat', LiveChat::class)
+            ->args([$config['live_chat']['workspace'], $config['live_chat']['identity_secret'], service('security.token_storage')->nullOnInvalid()])
+            ->public();
+        $services->alias(LiveChat::class, 'hibira.live_chat')->public();
+
         $services->set('hibira.waiting_rooms', WaitingRooms::class)
             ->args([
                 $config['app_id'],
@@ -165,7 +178,7 @@ final class HibiraSymfonyBundle extends AbstractBundle
 
         if (class_exists(Environment::class)) {
             $services->set('hibira.twig_extension', HibiraExtension::class)
-                ->args([service('hibira'), service('router')->nullOnInvalid()])
+                ->args([service('hibira'), service('router')->nullOnInvalid(), service('hibira.live_chat')])
                 ->tag('twig.extension');
         }
 
