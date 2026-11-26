@@ -45,7 +45,7 @@ final class ChatTest extends TestCase
         foreach ($params as $k => $v) {
             $pairs[] = $k.'='.$v;
         }
-        $expected = hash_hmac('sha256', $request->getMethod()."\n".$request->getUri()->getPath()."\n".implode('&', $pairs), 'app-secret');
+        $expected = hash_hmac('sha256', $request->getMethod()."\n".rawurldecode($request->getUri()->getPath())."\n".implode('&', $pairs), 'app-secret');
         $this->assertSame($expected, $signature);
         $body = (string) $request->getBody();
         if ($body !== '') {

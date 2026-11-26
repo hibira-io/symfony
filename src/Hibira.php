@@ -255,7 +255,8 @@ class Hibira
         if ($json !== null) {
             $query['body_md5'] = md5($json);
         }
-        $signed = Pusher::build_auth_query_params((string) $this->config['key'], (string) $this->config['secret'], $method, $path, $query);
+        // The server checks the signature over the decoded path ("order 42", not order%2042).
+        $signed = Pusher::build_auth_query_params((string) $this->config['key'], (string) $this->config['secret'], $method, rawurldecode($path), $query);
         $options = [
             'query' => $signed,
             'http_errors' => false,
