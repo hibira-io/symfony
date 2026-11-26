@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Fix: Approvals and Chat API requests are signed over the decoded path, as the server checks them, so IDs with a space or `/` no longer answer 401.
+- Chat API: `$hibira->chat()` returns a `Chat` client for conversations, members, messages, read receipts, system messages and a user's conversations; errors throw `ChatException`.
+
 ## 0.3.0
 
 - Approvals: `Hibira::requestApproval()`, `approval()`, `waitForApproval()` and `replyToApproval()` ask a person for a decision and read the answer; errors throw `ApprovalException`.
