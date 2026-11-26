@@ -351,6 +351,30 @@ of deciding (`$approval['awaiting_reply']`), answer with
 `$hibira->replyToApproval($id, '...')`. `approvers`, `quorum` and
 `callback_url` are passed through for Approvals workspaces.
 
+## Chat API
+
+Conversations with stored history, read receipts and offline push
+([Chat API](https://hibira.io/chat-api), in beta per account), from
+`$hibira->chat()`:
+
+```php
+$chat = $hibira->chat();
+$chat->putConversation('order-1042', ['name' => 'Order #1042', 'members' => ['buyer-7', 'seller-3']]);
+$chat->sendMessage('order-1042', 'seller-3', 'Shipped today!', ['push' => 'offline']);
+$chat->systemMessage('order-1042', 'Tracking number added');
+
+$page = $chat->listMessages('order-1042', after: 0, limit: 50);
+$chat->markRead('order-1042', 'buyer-7', seq: 12);
+$inbox = $chat->userConversations('buyer-7', limit: 20);
+```
+
+`getConversation()`, `deleteConversation()`, `addMembers()` and
+`removeMember()` cover the rest, and `$chat->request('POST',
+'/conversations/order-1042/typing')` reaches any other route, signed. Clients
+receive `chat.*` events on `#server-to-user-<user_id>` after
+`pusher.signin`. Errors throw `ChatException` (`getCode()` is the HTTP
+status). The reference is https://hibira.io/chat-api/reference.
+
 ## Coming from Mercure
 
 | Mercure | Hibira |
@@ -405,3 +429,4 @@ vendor/bin/phpunit
 - 等候室（waiting room）：在 controller 加 `#[WaitingRoom('presale')]`，或在 `hibira.waiting_room.paths` 設定路徑，沒有 pass 的訪客會被導到 Hibira 託管的排隊頁，輪到時帶著簽名 pass 回來並存成 HttpOnly cookie。
 
 - **Approvals**：`$hibira->requestApproval()` 發出需要人決定的請求，把回傳的 `url` 分享給決策者，再用 `waitForApproval()` 等待結果（approved、rejected 或 expired）。
+- **Chat API**：`$hibira->chat()` 建立對話、以成員身分發訊息、讀取歷史、標記已讀與查詢使用者的對話列表；錯誤會丟出 `ChatException`。

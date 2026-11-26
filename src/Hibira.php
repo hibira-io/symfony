@@ -2,7 +2,9 @@
 
 namespace Hibira\SymfonyBundle;
 
+use Hibira\SymfonyBundle\Chat\Chat;
 use Hibira\SymfonyBundle\Exception\ApprovalException;
+use Hibira\SymfonyBundle\Exception\ChatException;
 use Hibira\SymfonyBundle\Exception\MissingCredentialsException;
 use Hibira\SymfonyBundle\Exception\PayloadTooLargeException;
 use Hibira\SymfonyBundle\Message\PublishEvent;
@@ -221,12 +223,35 @@ class Hibira
      */
     private function approvalsRequest(string $method, string $resource, array $query, ?array $body, int $timeout = 15): array
     {
+        return $this->signedRequest($method, $resource, $query, $body, $timeout, ApprovalException::class);
+    }
+
+    /**
+     * The Chat API (https://hibira.io/chat-api): conversations, messages,
+     * read receipts. Users receive chat.* events after pusher.signin().
+     */
+    public function chat(): Chat
+    {
+        return new Chat(fn (string $method, string $resource, array $query, ?array $body) => $this->signedRequest($method, $resource, $query, $body, 15, ChatException::class));
+    }
+
+    /**
+     * A signed Channels-protocol HTTP API request under /apps/APP_ID.
+     *
+     * @param array<string, string>                                   $query
+     * @param array<string, mixed>|null                               $body
+     * @param class-string<ApprovalException>|class-string<ChatException> $exception
+     *
+     * @return array<string, mixed>
+     */
+    private function signedRequest(string $method, string $resource, array $query, ?array $body, int $timeout, string $exception): array
+    {
         $missing = $this->missingCredentials();
         if ($missing !== []) {
             throw MissingCredentialsException::realtime($missing);
         }
         $path = '/apps/'.$this->config['app_id'].$resource;
-        $json = $body === null ? null : json_encode($body, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $json = $body === null ? null : json_encode($body === [] ? new \stdClass() : $body, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         if ($json !== null) {
             $query['body_md5'] = md5($json);
         }
@@ -248,9 +273,12 @@ class Hibira
         if ($status >= 200 && $status < 300 && \is_array($data)) {
             return $data;
         }
+        if ($status >= 200 && $status < 300 && trim($text) === '') {
+            return [];
+        }
         $message = \is_array($data) && isset($data['error']) ? (string) $data['error'] : trim($text);
 
-        throw new ApprovalException($status, $message !== '' ? $message : 'HTTP '.$status, $text);
+        throw new $exception($status, $message !== '' ? $message : 'HTTP '.$status, $text);
     }
 
     /**
